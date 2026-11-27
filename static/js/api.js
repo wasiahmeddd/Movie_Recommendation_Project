@@ -181,8 +181,140 @@ const api = {
         genres: ["Sci-Fi", "Adventure"],
         match_percentage: 98,
         explanation: "Trending Now"
+      },
+      {
+        id: 9,
+        title: "The Shawshank Redemption",
+        release_year: 1994,
+        duration: 142,
+        average_rating: 4.9,
+        rating_count: 450,
+        poster_url: "https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg",
+        overview: "Framed for murder, banker Andy Dufresne begins a new life at Shawshank prison, forming a deep friendship with Red.",
+        director: "Frank Darabont",
+        cast_members: "Tim Robbins, Morgan Freeman",
+        genres: ["Drama", "Crime"],
+        match_percentage: 99,
+        explanation: "All-Time Top Rated"
+      },
+      {
+        id: 10,
+        title: "Fight Club",
+        release_year: 1999,
+        duration: 139,
+        average_rating: 4.8,
+        rating_count: 360,
+        poster_url: "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/hZkgoQYus5vegHoetLkCJzb17zJ.jpg",
+        overview: "An insomniac office worker looking for a way to change his life crosses paths with a devil-may-care soap maker.",
+        director: "David Fincher",
+        cast_members: "Brad Pitt, Edward Norton, Helena Bonham Carter",
+        genres: ["Drama", "Thriller"],
+        match_percentage: 97,
+        explanation: "Cult Classic"
+      },
+      {
+        id: 11,
+        title: "Oppenheimer",
+        release_year: 2023,
+        duration: 180,
+        average_rating: 4.9,
+        rating_count: 390,
+        poster_url: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/rM5Y09xC99JeApXWZZSIh42XBqZ.jpg",
+        overview: "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
+        director: "Christopher Nolan",
+        cast_members: "Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr.",
+        genres: ["Drama", "History"],
+        match_percentage: 98,
+        explanation: "Oscar Winner"
+      },
+      {
+        id: 12,
+        title: "Spider-Man: Into the Spider-Verse",
+        release_year: 2018,
+        duration: 117,
+        average_rating: 4.8,
+        rating_count: 310,
+        poster_url: "https://image.tmdb.org/t/p/w500/iiZZdoQBEYBv6id8su7ImL0oCbD.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/7d6woWBsigYrqqRvd29vyokuh57.jpg",
+        overview: "Teen Miles Morales becomes the new Spider-Man and joins other Spider-heroes across dimensions to stop Kingpin.",
+        director: "Bob Persichetti, Peter Ramsey",
+        cast_members: "Shameik Moore, Jake Johnson, Hailee Steinfeld",
+        genres: ["Animation", "Action", "Adventure"],
+        match_percentage: 98,
+        explanation: "Popular Animation"
+      },
+      {
+        id: 13,
+        title: "Parasite",
+        release_year: 2019,
+        duration: 132,
+        average_rating: 4.8,
+        rating_count: 330,
+        poster_url: "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/hiKmpZMGZsrkA3cdce8a7Dpos1j.jpg",
+        overview: "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
+        director: "Bong Joon-ho",
+        cast_members: "Song Kang-ho, Lee Sun-kyun, Cho Yeo-jeong",
+        genres: ["Thriller", "Drama", "Comedy"],
+        match_percentage: 97,
+        explanation: "Critically Acclaimed Thriller"
+      },
+      {
+        id: 14,
+        title: "Coco",
+        release_year: 2017,
+        duration: 105,
+        average_rating: 4.8,
+        rating_count: 280,
+        poster_url: "https://image.tmdb.org/t/p/w500/gGEsBPAijhVUFoiNpgZXqRVWJt2.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/askg3SMvhqEl4OL52YuvdtY40Yb.jpg",
+        overview: "Aspiring musician Miguel enters the Land of the Dead to find his great-great-grandfather, a legendary singer.",
+        director: "Lee Unkrich",
+        cast_members: "Anthony Gonzalez, Gael García Bernal",
+        genres: ["Animation", "Family", "Music"],
+        match_percentage: 96,
+        explanation: "Family Favorite"
+      },
+      {
+        id: 15,
+        title: "Whiplash",
+        release_year: 2014,
+        duration: 107,
+        average_rating: 4.8,
+        rating_count: 290,
+        poster_url: "https://image.tmdb.org/t/p/w500/7fn624j5lj3xTme2SgiLCeuedmO.jpg",
+        backdrop_url: "https://image.tmdb.org/t/p/original/6bbZ6XyvgfjhQwfplHVpj7IXemw.jpg",
+        overview: "A promising young drummer enrolls at a cut-throat music conservatory where his dreams of greatness are mentored by an instructor who will stop at nothing.",
+        director: "Damien Chazelle",
+        cast_members: "Miles Teller, J.K. Simmons",
+        genres: ["Drama", "Music"],
+        match_percentage: 97,
+        explanation: "Intense Musical Drama"
       }
     ];
+
+    if (endpoint.startsWith("/search")) {
+      const urlParams = new URLSearchParams(endpoint.split("?")[1] || "");
+      const q = (urlParams.get("q") || "").toLowerCase().trim();
+      const genre = (urlParams.get("genre") || "").toLowerCase().trim();
+      let results = [...catalog];
+      if (genre && genre !== "all") {
+        results = results.filter(m => m.genres && m.genres.some(g => g.toLowerCase() === genre));
+      }
+      if (q) {
+        results = results.filter(m =>
+          (m.title && m.title.toLowerCase().includes(q)) ||
+          (m.director && m.director.toLowerCase().includes(q)) ||
+          (m.cast_members && m.cast_members.toLowerCase().includes(q)) ||
+          (m.overview && m.overview.toLowerCase().includes(q)) ||
+          (m.genres && m.genres.some(g => g.toLowerCase().includes(q)))
+        );
+      }
+      return results;
+    }
 
     if (endpoint === "/movies/featured") {
       return catalog[0];
@@ -192,7 +324,9 @@ const api = {
         { id: "recommended", title: "Top Picks for You", type: "recommended", movies: catalog.slice(0, 6) },
         { id: "trending", title: "Trending Now", type: "trending", movies: catalog.slice(2, 8) },
         { id: "action", title: "Action & Adventure", type: "genre", movies: catalog.filter(m => m.genres.includes("Action")) },
-        { id: "scifi", title: "Sci-Fi & Mind Benders", type: "genre", movies: catalog.filter(m => m.genres.includes("Sci-Fi")) }
+        { id: "scifi", title: "Sci-Fi & Mind Benders", type: "genre", movies: catalog.filter(m => m.genres.includes("Sci-Fi")) },
+        { id: "thriller", title: "Edge-of-Your-Seat Thrillers", type: "genre", movies: catalog.filter(m => m.genres.includes("Thriller")) },
+        { id: "drama", title: "Critically Acclaimed Drama", type: "genre", movies: catalog.filter(m => m.genres.includes("Drama")) }
       ];
     }
     if (endpoint.startsWith("/movies/")) {
@@ -316,9 +450,15 @@ const api = {
   },
 
   // Search
-  searchMovies(query, genre = "", sort = "popularity") {
+  async searchMovies(query, genre = "", sort = "popularity") {
     const params = new URLSearchParams({ q: query, genre, sort });
-    return this.request(`/search?${params.toString()}`);
+    try {
+      const res = await this.request(`/search?${params.toString()}`);
+      return Array.isArray(res) ? res : [];
+    } catch (e) {
+      const fallback = this.getCloudFallback(`/search?${params.toString()}`);
+      return Array.isArray(fallback) ? fallback : [];
+    }
   },
 
   // Admin

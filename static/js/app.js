@@ -27,40 +27,64 @@ const app = {
 
   setupSearch() {
     const input = document.getElementById("navSearchInput");
+    const btn = document.getElementById("navSearchBtn");
     const suggestions = document.getElementById("searchSuggestions");
     let debounceTimer = null;
 
-    input.addEventListener("input", (e) => {
-      clearTimeout(debounceTimer);
-      const query = e.target.value.trim();
-      if (!query || query.length < 2) {
+    const performSearch = async (query) => {
+      if (!query || query.length < 1) {
         suggestions.classList.remove("active");
         suggestions.innerHTML = "";
         return;
       }
 
-      debounceTimer = setTimeout(async () => {
-        try {
-          const results = await api.searchMovies(query);
-          if (!results || results.length === 0) {
-            suggestions.innerHTML = `<div style="padding: 12px; color: var(--text-muted); font-size: 13px;">No movies found for "${query}"</div>`;
-          } else {
-            suggestions.innerHTML = results.slice(0, 6).map(m => `
-              <div class="suggestion-item" onclick="app.openDetails(${m.id})">
-                <img src="${m.poster_url}" onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=100&q=80'" />
-                <div class="suggestion-info">
-                  <h4>${m.title}</h4>
-                  <p>${m.release_year} • ★ ${m.average_rating ? m.average_rating.toFixed(1) : '4.0'}</p>
-                </div>
+      suggestions.innerHTML = `<div style="padding: 12px; color: var(--text-muted); font-size: 13px;">Searching...</div>`;
+      suggestions.classList.add("active");
+
+      try {
+        const results = await api.searchMovies(query);
+        if (!results || results.length === 0) {
+          suggestions.innerHTML = `<div style="padding: 12px; color: var(--text-muted); font-size: 13px;">No movies found for "${query}"</div>`;
+        } else {
+          suggestions.innerHTML = results.slice(0, 8).map(m => `
+            <div class="suggestion-item" onclick="app.openDetails(${m.id})">
+              <img src="${m.poster_url}" onerror="this.src='https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=100&q=80'" />
+              <div class="suggestion-info">
+                <h4>${m.title}</h4>
+                <p>${m.release_year} • ★ ${m.average_rating ? Number(m.average_rating).toFixed(1) : '4.5'} • ${m.genres ? m.genres.slice(0, 2).join(', ') : ''}</p>
               </div>
-            `).join("");
-          }
-          suggestions.classList.add("active");
-        } catch (err) {
-          console.error("Search error:", err);
+            </div>
+          `).join("");
         }
-      }, 250);
+        suggestions.classList.add("active");
+      } catch (err) {
+        console.error("Search error:", err);
+        suggestions.innerHTML = `<div style="padding: 12px; color: #ff6b6b; font-size: 13px;">Search error. Try again.</div>`;
+      }
+    };
+
+    input.addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+      const query = e.target.value.trim();
+      debounceTimer = setTimeout(() => performSearch(query), 200);
     });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        performSearch(input.value.trim());
+      }
+    });
+
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        performSearch(input.value.trim());
+        input.focus();
+      });
+    }
 
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".search-container")) {
