@@ -36,7 +36,7 @@ def run_tests():
 
     # 1. Static Index
     res = client.get("/")
-    check("Homepage returns HTTP 200", res.status_code == 200 and b"tech titans" in res.data)
+    check("Homepage returns HTTP 200", res.status_code == 200 and b"TITANFLIX" in res.data)
 
     # 2. Featured movie
     res = client.get("/api/movies/featured")

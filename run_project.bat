@@ -1,9 +1,9 @@
 @echo off
-title CineStream Movie Recommendation Platform
+title TitanFlix Movie Recommendation Platform
 color 0A
 
 echo =====================================================================
-echo           CINESTREAM MOVIE RECOMMENDATION PLATFORM
+echo           TITANFLIX MOVIE RECOMMENDATION PLATFORM
 echo                     Skill Lab Review 2
 echo =====================================================================
 echo.
