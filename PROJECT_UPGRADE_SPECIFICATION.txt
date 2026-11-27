@@ -1,0 +1,843 @@
+====================================================================================================
+PROJECT TITANFLIX: COMPLETE SYSTEM ARCHITECTURE, ALGORITHM SPECIFICATION, AND UPGRADE DOSSIER
+====================================================================================================
+DOCUMENT TYPE: AI-Digestible Technical Specification & Project Baseline Dossier (PBD Source)
+TARGET SYSTEM: TitanFlix Movie Discovery & Intelligent Recommendation Platform
+PREPARED FOR: Direct Ingestion into Large Language Models (ChatGPT, Gemini, Claude) for PBD Generation
+COLLEGE CONTEXT: BMSCE - Department of Artificial Intelligence & Machine Learning (AIML) Skill Lab
+REVIEW MILESTONE: Skill Lab Review 2 (Upgraded from Review 1 Prototype)
+DATE OF RECORD: 2026-11-27
+STATUS: Fully Implemented, Unit Tested (18/18 Tests Passed - 100%), Deployed to Cloud and Local Batches
+
+====================================================================================================
+TABLE OF CONTENTS
+====================================================================================================
+1. EXECUTIVE SYSTEM IDENTITY & METADATA
+2. PREVIOUS VERSION (REVIEW 1) BASELINE SPECIFICATION
+3. COMPREHENSIVE GAP ANALYSIS: WHAT HAS CHANGED (OLD VS NEW)
+4. COMPLETE ARCHITECTURAL TAXONOMY & TECHNOLOGY STACK
+5. DATASET ACQUISITION, PARSING, AND ENRICHMENT ENGINE
+6. DATABASE ARCHITECTURE, ENTITY-RELATIONSHIP (ER) MODEL & COMPLETE SCHEMA
+7. RECOMMENDATION ENGINE ALGORITHMS (MATHEMATICS, FORMULAS & CODE IMPLEMENTATION)
+   7.1 Content-Based Filtering (Pure-Python Sparse TF-IDF Vectorizer & Cosine Similarity)
+   7.2 Collaborative Filtering (User-Based Pearson Correlation & Rating Prediction)
+   7.3 Dynamic Multi-Objective Hybrid Recommendation Scoring Function
+   7.4 Real-Time Implicit/Explicit Interaction Tracking & Feedback Decay Boosts
+   7.5 Cold-Start Multi-Stage Resolution Mechanism
+   7.6 Human-Readable Semantic Recommendation Explanation Engine
+8. BACKEND REST API SYSTEM (FLASK & ROUTE CONTRACT SPECIFICATIONS)
+9. FRONTEND ARCHITECTURE: NETFLIX-STYLE "TITANFLIX" SINGLE PAGE APPLICATION (SPA)
+10. USER INTERACTION TRACKING & ENGAGEMENT TELEMETRY
+11. VIDEO PLAYBACK SIMULATOR & "CONTINUE WATCHING" LIFECYCLE
+12. USER ONBOARDING & PREFERENCE CAPTURE SYSTEM
+13. SOCIAL GRAPH, CONTACT PICKER API & PEER RECOMMENDATIONS
+14. ADMINISTRATIVE PORTAL & CATALOG MANAGEMENT SYSTEM
+15. TEST SUITE & VERIFICATION HARNESS (18-POINT VERIFICATION)
+16. DEPLOYMENT & RUNTIME INFRASTRUCTURE (LOCAL .BAT & FIREBASE HOSTING)
+17. PROMPT DIRECTIVE FOR AI CONSUMPTION (HOW TO GENERATE THE PBD)
+
+
+====================================================================================================
+1. EXECUTIVE SYSTEM IDENTITY & METADATA
+====================================================================================================
+- Project Name: TitanFlix (formerly CineStream / Movie Recommendation Intelligence System)
+- Platform Branding: TITANFLIX AI RECS
+- Category: Streaming Discovery, Content-Based & Collaborative Filtering Machine Learning Platform
+- Repository Origin: https://github.com/wasiahmeddd/Movie_Recommendation_Project
+- Cloud Deployment URL: https://cinestream-rec-2026.web.app
+- Alternate Cloud URL: https://cinestream-rec-2026.firebaseapp.com
+- Firebase Project ID: cinestream-rec-2026
+- Local Port: http://127.0.0.1:5000
+- Authentication Engine: Salted SHA-256 with In-Memory Token Session Store
+- Primary Data Engine: SQLite 3 with Write-Ahead Logging (WAL) and Foreign Key Constraints
+- Real Benchmark Dataset: GroupLens MovieLens (ml-latest-small) enriched with TMDB Artwork CDN
+
+
+====================================================================================================
+2. PREVIOUS VERSION (REVIEW 1) BASELINE SPECIFICATION
+====================================================================================================
+The user's original submission was a standalone, monolithic Python script located in:
+`Movie_Recommendation_Project_First_Review (2)\Movie_Recommendation_Project\main.py`
+accompanied by `requirements.txt` and a basic `README.md`.
+
+ORIGINAL IMPLEMENTATION CHARACTERISTICS:
+1. Data Storage:
+   - Zero database persistence.
+   - Hardcoded in-memory Python dictionaries and Pandas DataFrames.
+   - Total Movies: 15 hardcoded synthetic movies (e.g., Interstellar, Titanic, Toy Story).
+   - Total Ratings: 48 hardcoded synthetic rating interactions across 12 users.
+   - Missing tables: No tables for users, passwords, sessions, genres, watch history, or watchlist.
+2. Recommendation Logic:
+   - Scikit-learn `TfidfVectorizer` applied over a concatenated `content` column (`title + genres + overview`).
+   - Scikit-learn `cosine_similarity` between movies.
+   - Hardcoded composite popularity formula: `score = 0.7 * average_rating + 0.3 * np.log1p(rating_count)`.
+   - Simple user taste profile taking the mean vector of movies rated >= 4.0.
+   - Demonstrative Linear Regression (`LinearRegression`) predicting rating from `release_year` and `genre_count` (an educational demo that had no real predictive utility on user taste).
+3. User Interface:
+   - None. Zero graphical interface.
+   - Terminal printouts of pandas DataFrames.
+   - 3 static PNG plots generated via Matplotlib and Seaborn into `outputs/graphs/`:
+     - rating_distribution.png
+     - most_rated_movies.png
+     - correlation_heatmap.png
+4. Authentication:
+   - None. Users were simply numbers (`101`, `102`, etc.) in a matrix.
+5. Tracking:
+   - None. No concept of clicks, impressions, watch progress, or skips.
+6. Execution:
+   - Executed solely through `python main.py` in terminal.
+7. Major Technical Vulnerabilities in Old Version:
+   - Relied heavily on Scikit-learn and Pandas C-extension DLLs. When run on Windows environments with Application Control (AppLocker) policies (common in college computer labs and student Windows machines), importing `scipy.special` or `pandas._libs.tslibs.np_datetime` crashed with `ImportError: DLL load failed: An Application Control policy has blocked this file`.
+
+
+====================================================================================================
+3. COMPREHENSIVE GAP ANALYSIS: WHAT HAS CHANGED (OLD VS NEW)
+====================================================================================================
++-----------------------------+------------------------------------+---------------------------------------+
+| DIMENSION                   | PREVIOUS VERSION (REVIEW 1)        | UPGRADED VERSION (TITANFLIX)          |
++-----------------------------+------------------------------------+---------------------------------------+
+| User Interface              | Terminal console outputs only      | Netflix-style dark cinematic SPA      |
+| Front-end Stack             | None                               | Semantic HTML5, CSS3, Vanilla JS      |
+| Hero Section                | None                               | Dynamic spotlight banner with play/info|
+| Movie Carousels             | None                               | Smooth horizontal carousels with arrows|
+| Movie Cards                 | None                               | Poster, match score, year, hover quick|
+| Video Playback              | None                               | Interactive player with progress scrub|
+| Movie Details View          | None                               | Modal with synopsis, cast, similar recs|
+| Real Dataset                | 15 hardcoded rows                  | 1,200 MovieLens movies, 20,320 ratings|
+| Dataset Source              | Manual python list                 | GroupLens MovieLens 100K + TMDB CDN   |
+| Database Engine             | None (ephemeral DataFrame)         | SQLite (WAL Mode, Foreign Keys, Index)|
+| Database Entities           | 0 tables                           | 12 relational tables                  |
+| Collaborative Filtering     | Absent                             | User-Based Pearson Correlation Matrix |
+| Content-Based Filtering     | Scikit-learn TF-IDF (DLL fragile)  | Pure-Python TF-IDF & Cosine Similarity|
+| Hybrid Recommendation       | None                               | Multi-objective weighted scoring      |
+| Cold-Start Handling         | Basic popularity fallback          | Onboarding genre prior + Log popular  |
+| Recommendation Explanations | Absent                             | Dynamic badges ("Because you liked..")|
+| User Authentication         | None                               | Salted SHA-256, Session Tokens, RBAC  |
+| User Onboarding             | None                               | Visual genre picker (enforcing >= 3)  |
+| Telemetry / Tracking        | None                               | Real-time events (click, like, skip)  |
+| Continue Watching           | None                               | Live red progress bar on partial watch|
+| Watch History               | None                               | Chronological history page            |
+| Watchlist                   | None                               | 1-click toggle, dedicated page        |
+| Social Network              | None                               | Friend search, peer activity row      |
+| Contact Picker API          | None                               | Web Contacts API detection + fallback |
+| Administrative Portal       | None                               | Analytics KPI dashboard, Movie CRUD   |
+| Test Coverage               | None                               | Automated 18-step test suite (100%)   |
+| Cloud Deployment            | None                               | Firebase Hosting (Live Global CDN)    |
+| Desktop Execution           | Manual CLI commands                | One-click double-click .bat launchers |
++-----------------------------+------------------------------------+---------------------------------------+
+
+
+====================================================================================================
+4. COMPLETE ARCHITECTURAL TAXONOMY & TECHNOLOGY STACK
+====================================================================================================
+TitanFlix is structured around a decoupled client-server architecture with an intelligent scoring pipeline.
+
+1. Presentation Layer (Frontend):
+   - Technology: Vanilla JavaScript (ES6+), HTML5, CSS3 Custom Properties.
+   - Design System: Netflix Dark Theme (`#141414` background, `#E50914` brand red, `#46D369` match green).
+   - Component Architecture:
+     - Navigation Bar (Sticky with blur background, search bar, dropdown profile).
+     - Hero Spotlight (Cinematic backdrop, dynamic metadata, call-to-actions).
+     - Carousels (CSS flex tracks with native hardware-accelerated smooth scroll).
+     - Modals (Details dialog, Video player overlay, Onboarding screen, Auth dialog).
+   - State & Storage: Client-side `localStorage` token management, reactive UI updates.
+   - Zero Bundler Dependency: No React, Vue, Webpack, or Babel overhead. Runs instantly in any browser.
+
+2. API & Orchestration Layer (Backend):
+   - Technology: Python 3.10+ / 3.13 with Flask 3.0+ and Flask-CORS.
+   - Routing: RESTful JSON endpoints with Bearer token authentication decorators (`@login_required`, `@admin_required`).
+   - Concurrency & Reliability: Native SQLite busy-timeout (30s) and Write-Ahead Logging (WAL) to prevent lock contention during concurrent API calls.
+
+3. Persistence Layer (Database):
+   - Engine: SQLite 3.
+   - Driver: Python standard library `sqlite3` with row factory enabled.
+   - Security: Foreign Key Enforcement (`PRAGMA foreign_keys = ON`), WAL journal mode (`PRAGMA journal_mode = WAL`), B-Tree indexing on critical foreign keys and query columns.
+
+4. Machine Learning & Algorithms:
+   - Pure-Python Sparse Inverted Index TF-IDF Vectorizer.
+   - Vector Norm Normalizer and Cosine Similarity Dot-Product Engine.
+   - User-User Collaborative Filtering Pearson Correlation Engine.
+   - Multi-Objective Hybrid Ranker with Linear Combination & Heuristic Prior.
+
+5. Cloud & Delivery Infrastructure:
+   - Hosting: Firebase Hosting (Google Cloud Global CDN).
+   - Public CDN: TMDB Image Assets (`image.tmdb.org/t/p/w500` & `original`).
+   - Fallback Network: Unsplash High-Definition Movie Still fallbacks.
+   - Desktop Harness: Windows Batch Scripting (`run_movie_platform.bat`).
+
+
+====================================================================================================
+5. DATASET ACQUISITION, PARSING, AND ENRICHMENT ENGINE
+====================================================================================================
+Location of Ingestion Script: `datasets/download_and_import.py`
+
+5.1 Data Acquisition Source:
+- Primary Source: GroupLens Research (University of Minnesota).
+- Dataset: MovieLens 100K ("ml-latest-small.zip", 0.93 MB).
+- Target URL: `https://files.grouplens.org/datasets/movielens/ml-latest-small.zip`.
+- SSL Handling: Uses `ssl._create_unverified_context()` to bypass restrictive campus/corporate firewall SSL inspection (e.g. BMSCE campus networks).
+
+5.2 Archive Contents Extracted:
+1. `movies.csv`: 9,742 rows containing `movieId`, `title`, `genres` (pipe-separated).
+2. `ratings.csv`: 100,836 rows containing `userId`, `movieId`, `rating` (0.5 to 5.0), `timestamp`.
+3. `links.csv`: Mapping table containing `movieId`, `imdbId`, `tmdbId`.
+4. `tags.csv`: User-applied contextual tags for films.
+
+5.3 Ingestion & Preprocessing Logic:
+1. Rating Aggregation:
+   - Streams `ratings.csv`.
+   - Computes `sum(rating)` and `count(rating)` per movie.
+   - Derives `average_rating = round(sum / count, 2)`.
+2. Title & Year Extraction:
+   - Regex: `re.search(r"\s*\((\d{4})\)\s*$", raw_title)`.
+   - Separates clean alphanumeric title from release year. Default fallback year: 2000.
+3. Top Movie Ranking & Ingestion Filter:
+   - Sorts 9,742 movies by rating count and manual enrichment priority.
+   - Selects the top 1,200 movies with the highest interaction densities to optimize memory, compute efficiency, and recommendation coverage.
+4. TMDB High-Resolution Artwork & Metadata Enrichment:
+   - Prominent blockbusters are enriched with real high-resolution TMDB posters, cinematic backdrops, verified synopses, real directors, and full cast lists.
+   - Sample Enriched Titles:
+     * Inception: Backdrop `8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg`, Poster `9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg`, Dir: Christopher Nolan, Cast: Leonardo DiCaprio.
+     * Interstellar: Backdrop `xJHokMbljvjADYdit5fK5VQsXEG.jpg`, Poster `gEU2QniE6E77NI6lCU6MxlNBvIx.jpg`, Dir: Christopher Nolan.
+     * The Dark Knight: Backdrop `dqK9Hag1054tghRQSqLSfrkvQnA.jpg`, Poster `qJ2tW6WMUDux911r6m7haRef0WH.jpg`.
+     * The Matrix, Pulp Fiction, The Shawshank Redemption, Forrest Gump, Fight Club, The Godfather, Avengers: Infinity War, Gladiator, Titanic, Jurassic Park, Coco, Dune, Oppenheimer, Parasite, Whiplash.
+   - Generic Fallbacks: High-quality Unsplash genre-specific cinema stills for long-tail items.
+5. Ratings Ingestion:
+   - Filters ratings corresponding to the 1,200 indexed movies.
+   - Inserts 20,320 genuine ratings into the `ratings` table across 200 users.
+6. Community User Population:
+   - Generates simulated user accounts for MovieLens user IDs (`movielens_user_X`) to satisfy relational foreign key constraints while enabling true collaborative filtering.
+
+
+====================================================================================================
+6. DATABASE ARCHITECTURE, ENTITY-RELATIONSHIP (ER) MODEL & COMPLETE SCHEMA
+====================================================================================================
+Database Engine: SQLite 3
+Database File: `movies.db` (Located in project root)
+Configuration Directives:
+- `PRAGMA foreign_keys = ON;` (Strict referential integrity)
+- `PRAGMA journal_mode = WAL;` (Write-Ahead Logging for high concurrency without table locking)
+- `PRAGMA busy_timeout = 30000;` (30-second lock acquisition timeout)
+
+6.1 ER Diagram Overview:
+[users] 1 --< N [user_preferences]
+[users] 1 --< N [ratings] >-- 1 [movies]
+[users] 1 --< N [user_interactions] >-- 1 [movies]
+[users] 1 --< N [watch_history] >-- 1 [movies]
+[users] 1 --< N [watchlist] >-- 1 [movies]
+[movies] 1 --< N [movie_genres] >-- 1 [genres]
+[users] 1 --< N [friends] >-- 1 [users]
+[users] 1 --< N [friend_requests] >-- 1 [users]
+[users] 1 --- 1 [user_privacy_settings]
+
+6.2 Detailed Table Specifications (DDL):
+
+1. `users`
+   - Purpose: Core user authentication and authorization accounts.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS users (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         username TEXT UNIQUE NOT NULL,
+         email TEXT UNIQUE NOT NULL,
+         password_hash TEXT NOT NULL,
+         role TEXT NOT NULL DEFAULT 'user', -- 'user' or 'admin'
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     );
+
+2. `user_preferences`
+   - Purpose: Stores onboarding genre selections (minimum 3 required).
+   - DDL:
+     CREATE TABLE IF NOT EXISTS user_preferences (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id INTEGER NOT NULL,
+         genre TEXT NOT NULL,
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+         UNIQUE (user_id, genre)
+     );
+
+3. `movies`
+   - Purpose: Comprehensive movie catalog metadata.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS movies (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         movielens_id INTEGER UNIQUE,
+         tmdb_id INTEGER,
+         title TEXT NOT NULL,
+         release_year INTEGER,
+         duration INTEGER DEFAULT 110,
+         overview TEXT,
+         poster_url TEXT,
+         backdrop_url TEXT,
+         director TEXT,
+         cast_members TEXT,
+         average_rating REAL DEFAULT 0.0,
+         rating_count INTEGER DEFAULT 0,
+         tags TEXT,
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     );
+
+4. `genres`
+   - Purpose: Master list of unique cinematic genres.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS genres (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         name TEXT UNIQUE NOT NULL
+     );
+
+5. `movie_genres`
+   - Purpose: Many-to-many junction table between movies and genres.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS movie_genres (
+         movie_id INTEGER NOT NULL,
+         genre_id INTEGER NOT NULL,
+         PRIMARY KEY (movie_id, genre_id),
+         FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+         FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+     );
+
+6. `ratings`
+   - Purpose: Historical ratings (MovieLens imported + live user ratings).
+   - DDL:
+     CREATE TABLE IF NOT EXISTS ratings (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id INTEGER NOT NULL,
+         movie_id INTEGER NOT NULL,
+         rating REAL NOT NULL CHECK(rating >= 0.5 AND rating <= 5.0),
+         timestamp INTEGER,
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+         FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+         UNIQUE (user_id, movie_id)
+     );
+
+7. `user_interactions`
+   - Purpose: Granular telemetry log of user actions.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS user_interactions (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id INTEGER NOT NULL,
+         movie_id INTEGER NOT NULL,
+         interaction_type TEXT NOT NULL, 
+         -- 'click', 'view_details', 'watchlist_add', 'watch_start', 'watch_progress', 'complete', 'like', 'dislike', 'skip', 'impression'
+         watch_duration INTEGER DEFAULT 0,
+         completion_pct REAL DEFAULT 0.0,
+         recommendation_source TEXT,
+         session_id TEXT,
+         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+         FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
+     );
+
+8. `watch_history`
+   - Purpose: High-level viewing state for "Continue Watching" and watch history.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS watch_history (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id INTEGER NOT NULL,
+         movie_id INTEGER NOT NULL,
+         progress_pct REAL DEFAULT 0.0,
+         completed INTEGER DEFAULT 0, -- 1 if >= 90% watched
+         last_watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+         FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+         UNIQUE (user_id, movie_id)
+     );
+
+9. `watchlist`
+   - Purpose: Bookmarked movies explicitly saved by users.
+   - DDL:
+     CREATE TABLE IF NOT EXISTS watchlist (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id INTEGER NOT NULL,
+         movie_id INTEGER NOT NULL,
+         added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+         FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+         UNIQUE (user_id, movie_id)
+     );
+
+10. `friends`
+    - Purpose: Bidirectional accepted social friendships.
+    - DDL:
+      CREATE TABLE IF NOT EXISTS friends (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          friend_user_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (friend_user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE (user_id, friend_user_id)
+      );
+
+11. `friend_requests`
+    - Purpose: Pending, accepted, or rejected friend invitations.
+    - DDL:
+      CREATE TABLE IF NOT EXISTS friend_requests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sender_id INTEGER NOT NULL,
+          receiver_id INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE (sender_id, receiver_id)
+      );
+
+12. `user_privacy_settings`
+    - Purpose: User consent flags for social activity sharing.
+    - DDL:
+      CREATE TABLE IF NOT EXISTS user_privacy_settings (
+          user_id INTEGER PRIMARY KEY,
+          share_activity_with_friends INTEGER DEFAULT 1,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
+6.3 Database Indexes:
+- `CREATE INDEX idx_movies_title ON movies(title);`
+- `CREATE INDEX idx_movies_rating ON movies(average_rating);`
+- `CREATE INDEX idx_ratings_user ON ratings(user_id);`
+- `CREATE INDEX idx_ratings_movie ON ratings(movie_id);`
+- `CREATE INDEX idx_interactions_user ON user_interactions(user_id);`
+- `CREATE INDEX idx_interactions_movie ON user_interactions(movie_id);`
+- `CREATE INDEX idx_watch_history_user ON watch_history(user_id);`
+- `CREATE INDEX idx_watchlist_user ON watchlist(user_id);`
+
+
+====================================================================================================
+7. RECOMMENDATION ENGINE ALGORITHMS (MATHEMATICS, FORMULAS & CODE IMPLEMENTATION)
+====================================================================================================
+Location: `recommendation_engine.py`
+
+----------------------------------------------------------------------------------------------------
+7.1 Content-Based Filtering (CBF)
+----------------------------------------------------------------------------------------------------
+Objective: Measure similarity between movie textual representations and user taste profiles.
+
+A. Text Feature Extraction:
+For each movie `m`, construct a document `D_m`:
+`D_m = title + " " + genres + " " + genres + " " + overview + " " + director + " " + director + " " + cast + " " + tags`
+(Notice: `genres` and `director` are repeated to artificially inflate their Term Frequency weights).
+
+B. Tokenization & Pruning:
+Tokens are extracted using regex `\b[a-zA-Z]{2,}\b`, lowercased, and filtered against an English stop-word lexicon.
+
+C. Term Frequency - Inverse Document Frequency (TF-IDF):
+For term `t` in movie document `D_m`:
+$$\text{TF}(t, D_m) = \frac{\text{count}(t, D_m)}{\sum_{t' \in D_m} \text{count}(t', D_m)}$$
+$$\text{IDF}(t) = \ln\left(\frac{1 + N}{1 + \text{DF}(t)}\right) + 1.0$$
+where:
+- `N` = total number of movie documents in the catalog (1,200).
+- `DF(t)` = document frequency (number of movies containing term `t`).
+- The vector is L2-normalized:
+$$\vec{V}_m = \frac{\vec{W}_m}{\|\vec{W}_m\|_2}$$
+
+D. Cosine Similarity Function:
+Given two L2-normalized sparse vector dictionaries `V_a` and `V_b`:
+$$\text{CosineSimilarity}(\vec{V}_a, \vec{V}_b) = \sum_{t \in \vec{V}_a \cap \vec{V}_b} \vec{V}_a[t] \cdot \vec{V}_b[t]$$
+Time Complexity: O(min(|V_a|, |V_b|)) due to intersection over sparse keys.
+
+E. User Profile Generation:
+User profile vector `U_u` is constructed by accumulating weighted vectors:
+$$\vec{U}_u = \sum_{m \in \text{Liked}} 1.5 \cdot \vec{V}_m + \sum_{g \in \text{PrefGenres}} 2.0 \cdot \vec{T}_g$$
+where `Liked` are movies rated >= 3.5 or positively interacted with, and `T_g` are token vectors of user's chosen onboarding genres. `U_u` is subsequently L2-normalized.
+
+----------------------------------------------------------------------------------------------------
+7.2 Collaborative Filtering (CF)
+----------------------------------------------------------------------------------------------------
+Objective: Predict ratings for unseen movies based on community user-item interactions.
+
+A. User Rating Representation:
+User `u` is represented by rating vector `R_u = {m_1: r_{u,1}, m_2: r_{u,2}, ...}`.
+Mean rating of user `u`:
+$$\bar{r}_u = \frac{1}{|I_u|} \sum_{m \in I_u} r_{u, m}$$
+
+B. Pearson Correlation / Centered Cosine Similarity between User `u` and User `v`:
+$$\text{sim}(u, v) = \frac{\sum_{m \in I_{uv}} (r_{u, m} - \bar{r}_u)(r_{v, m} - \bar{r}_v)}{\sqrt{\sum_{m \in I_{uv}} (r_{u, m} - \bar{r}_u)^2} \sqrt{\sum_{m \in I_{uv}} (r_{v, m} - \bar{r}_v)^2}}$$
+where `I_{uv} = I_u \cap I_v` (movies rated by both users). If `|I_{uv}| < 2`, `sim(u, v) = 0`.
+
+C. Rating Prediction Function:
+For candidate movie `m` unrated by user `u`, predict score using top `K=25` nearest neighbors `S(u)` with `sim(u, v) > 0.1`:
+$$\hat{r}_{u, m} = \bar{r}_u + \frac{\sum_{v \in S(u)} \text{sim}(u, v) \cdot (r_{v, m} - \bar{r}_v)}{\sum_{v \in S(u)} |\text{sim}(u, v)|}$$
+
+D. Normalization:
+$$\text{CF\_Score}(u, m) = \text{clip}\left(\frac{\hat{r}_{u, m} - 0.5}{4.5}, 0.0, 1.0\right)$$
+
+----------------------------------------------------------------------------------------------------
+7.3 Multi-Objective Hybrid Recommendation Scoring Function
+----------------------------------------------------------------------------------------------------
+The engine computes a composite ranking score `FinalScore(u, m)` for every candidate movie `m` not yet completed by user `u`.
+
+Feature Components:
+1. `GenreAffinity(u, m)`: Overlap ratio between user's preferred onboarding genres and movie's genres:
+   $$\text{GenreAffinity} = \min(1.0, \text{Matches} \times 0.45)$$
+2. `ContentSimilarity(u, m)`: Cosine similarity between normalized user profile `U_u` and movie vector `V_m`:
+   $$\text{ContentSim} \in [0.0, 1.0]$$
+3. `CollabPrediction(u, m)`: Predicted rating from nearest-neighbor collaborative filtering:
+   $$\text{CollabPred} \in [0.0, 1.0]$$
+4. `QualityPrior(m)`: Bayesian-style prior combining average rating and log-scaled rating count:
+   $$\text{QualityPrior} = 0.7 \times \left(\frac{\text{AvgRating}}{5.0}\right) + 0.3 \times \min\left(1.0, \frac{\ln(1 + \text{RatingCount})}{6.0}\right)$$
+5. `InteractionBoost(u, m)`: Real-time implicit/explicit interaction adjustments:
+   - Added to Watchlist: `+0.25`
+   - Clicked / Details Opened: `+0.10`
+
+Linear Combination Formula:
+For Established Users (with >= 1 interaction / rating):
+$$\text{FinalScore} = (0.20 \times \text{GenreAffinity}) + (0.35 \times \text{ContentSim}) + (0.25 \times \text{CollabPred}) + (0.20 \times \text{QualityPrior}) + \text{InteractionBoost}$$
+
+Match Percentage Conversion (Display on UI):
+$$\text{MatchPercentage} = \text{int}\Big(\text{clip}\big(\text{round}(\text{FinalScore} \times 100), 72, 99\big)\Big)$$
+
+----------------------------------------------------------------------------------------------------
+7.4 Real-Time User Interaction Feedback & Decay Boosting
+----------------------------------------------------------------------------------------------------
+The system continuously listens to telemetry events from `user_interactions`:
+- `like` event: Movie ID added directly to `Likes` set; positively weights user profile vector by 1.5.
+- `dislike` event: Candidate movie is immediately removed from the candidate pool (`CandidateSet \ Dislikes`).
+- `skip` event (progress < 10%): Recorded as a negative engagement signal (-0.20 penalty).
+- `watch_progress` (25%, 50%, 75%): Increments affinity score.
+- `complete` (progress >= 90%): Movie marked completed; excluded from discovery carousels and placed in "Watch History".
+
+----------------------------------------------------------------------------------------------------
+7.5 Cold-Start Multi-Stage Resolution Mechanism
+----------------------------------------------------------------------------------------------------
+Condition: A user has zero watch history and zero explicit ratings (e.g. immediately after registration).
+Resolution Architecture:
+1. Primary Driver: Onboarding genre preferences selected during first login (enforced >= 3 genres).
+2. Weight Redistribution:
+   $$\text{FinalScore}_{\text{ColdStart}} = (0.45 \times \text{GenreAffinity}) + (0.25 \times \text{ContentSim}) + (0.30 \times \text{QualityPrior}) + \text{InteractionBoost}$$
+3. Eliminates Cold-Start Deadlock: New users immediately see a full page of high-quality, genre-aligned movies with realistic 90%+ match scores.
+
+----------------------------------------------------------------------------------------------------
+7.6 Human-Readable Semantic Recommendation Explanation Engine
+----------------------------------------------------------------------------------------------------
+Every recommended item is programmatically tagged with a semantic explanation string based on ranking attribution:
+- Rule 1: If movie in user's watchlist -> `"In your Watchlist"`
+- Rule 2: If movie has high content similarity to an explicit liked movie `M_liked` -> `"Because you liked M_liked"`
+- Rule 3: If movie matches onboarding genre `G` -> `"Matches your love for G"`
+- Rule 4: If movie driven by collaborative filtering -> `"Popular among users with similar taste"`
+- Rule 5: Fallback -> `"Trending high recommendation"`
+- Rule 6: Social recommendations -> `"Watched recently by [Friend Username]"`
+
+
+====================================================================================================
+8. BACKEND REST API SYSTEM (FLASK & ROUTE CONTRACT SPECIFICATIONS)
+====================================================================================================
+Location: `server.py`
+Port: 5000 (configurable via `PORT` environment variable)
+
+8.1 Authentication Endpoints:
+- `POST /api/auth/register`
+  * Input: `{"username": "...", "email": "...", "password": "..."}`
+  * Validation: Username >= 3 chars, valid email with '@', password >= 6 chars.
+  * Response: HTTP 201 with `{"token": "...", "user": {...}}`.
+- `POST /api/auth/login`
+  * Input: `{"username": "...", "password": "..."}` (accepts username or email).
+  * Response: HTTP 200 with `{"token": "...", "user": {...}}`.
+- `GET /api/auth/me`
+  * Headers: `Authorization: Bearer <token>`
+  * Response: HTTP 200 with user profile, roles, and onboarding preferences list.
+- `POST /api/auth/logout`
+  * Response: HTTP 200; invalidates token in memory.
+
+8.2 Onboarding Endpoints:
+- `GET /api/onboarding/genres`
+  * Response: List of all 23 available genres from database.
+- `POST /api/onboarding/preferences`
+  * Headers: `Authorization: Bearer <token>`
+  * Input: `{"genres": ["Sci-Fi", "Action", "Thriller"]}`
+  * Validation: Requires at least 3 genres.
+  * Response: HTTP 200; saves preferences and updates user taste vector.
+
+8.3 Movie Discovery & Carousel Endpoints:
+- `GET /api/movies/featured`
+  * Response: Highest-rated blockbuster with verified backdrop image for hero banner.
+- `GET /api/movies/categories`
+  * Headers: Optional `Authorization: Bearer <token>`
+  * Response: Array of populated carousels:
+    1. Continue Watching (for active user)
+    2. Top Picks for You (Personalized Hybrid Recommendations)
+    3. Popular Among Your Friends (Social Recommendations)
+    4. Trending Now
+    5. Critically Acclaimed & Top Rated
+    6. Action & Adventure
+    7. Sci-Fi & Mind Benders
+    8. Edge-of-Your-Seat Thrillers
+    9. Horror & Dark Cinema
+    10. Romantic Favourites
+    11. Comedies
+    12. Crime & Mystery
+    13. Animation & Family
+    14. Historical & War
+    15. Recently Added
+- `GET /api/movies/<id>`
+  * Response: Full metadata, director, cast, genres, watchlist status, and top 6 "More Like This" similar movies.
+
+8.4 Telemetry & Interaction Tracking Endpoints:
+- `POST /api/interactions`
+  * Headers: `Authorization: Bearer <token>`
+  * Input: `{"movie_id": X, "interaction_type": "click|view_details|like|dislike|skip", ...}`
+  * Response: HTTP 200 `{"status": "recorded"}`.
+
+8.5 Playback & Watch History Endpoints:
+- `POST /api/watch-progress`
+  * Headers: `Authorization: Bearer <token>`
+  * Input: `{"movie_id": X, "progress_pct": 45.0}`
+  * Logic: Upserts `watch_history`. Sets `completed = 1` if progress >= 90%.
+  * Response: HTTP 200.
+- `GET /api/watch-history`
+  * Headers: `Authorization: Bearer <token>`
+  * Response: Chronological list of user's watched and in-progress movies with progress bars.
+
+8.6 Watchlist Endpoints:
+- `GET /api/watchlist`
+  * Response: List of movies currently saved by user.
+- `POST /api/watchlist/toggle`
+  * Input: `{"movie_id": X}`
+  * Logic: Adds if absent; removes if present. Logs `watchlist_add` interaction.
+  * Response: HTTP 200 `{"in_watchlist": true|false}`.
+
+8.7 Social & Friends Endpoints:
+- `GET /api/friends`
+  * Response: List of connected friends and their most recently watched movies.
+- `GET /api/friends/search?q=...`
+  * Response: Matching users with connection status (`friends`, `pending`, `none`).
+- `POST /api/friends/request`
+  * Input: `{"target_user_id": X}`
+  * Response: Connects users bidirectionally.
+
+8.8 Search & Discovery Endpoint:
+- `GET /api/search?q=...&genre=...&sort=popularity|rating|year`
+  * Logic: Full-text substring search across `title`, `director`, `cast_members`, and `tags` with SQL parameterized safety.
+
+8.9 Administrative Endpoints (Protected by `@admin_required`):
+- `GET /api/admin/stats`
+  * Response: KPI aggregates: `total_movies`, `total_users`, `total_ratings`, `total_interactions`, and genre distribution breakdown.
+- `GET /api/admin/movies?page=1&search=...`
+  * Response: Paginated movie table for catalog management.
+- `POST /api/admin/movies`
+  * Input: Movie title, year, duration, rating, director, cast, genres, overview, poster/backdrop URLs.
+  * Logic: Inserts movie, associates genres in junction table, triggers automatic TF-IDF index refit.
+- `DELETE /api/admin/movies/<id>`
+  * Response: Deletes movie and cascading relationships.
+
+
+====================================================================================================
+9. FRONTEND ARCHITECTURE: NETFLIX-STYLE "TITANFLIX" SINGLE PAGE APPLICATION (SPA)
+====================================================================================================
+Directory: `static/`
+- HTML Entry: `static/index.html`
+- Stylesheet: `static/css/style.css`
+- Client Scripts: `static/js/` (`api.js`, `auth.js`, `onboarding.js`, `tracker.js`, `player.js`, `social.js`, `admin.js`, `app.js`)
+
+9.1 Design System & Aesthetic:
+- Color Palette:
+  * Primary Surface: `#141414` (Netflix Jet Black)
+  * Elevated Card Surface: `#202020`
+  * Accent Red: `#E50914` (Netflix Crimson)
+  * Match Score Green: `#46D369` (High-contrast confidence indicator)
+  * Gold: `#F5C518` (Admin highlights & rating stars)
+- Typography: Helvetica Neue, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto.
+
+9.2 Visual UI Components:
+1. Sticky Header Navbar (`#mainNavbar`):
+   - Dynamic scroll listener: Transparent on top of hero; transitions to solid black with backdrop blur on scroll down.
+   - Brand Logo: "TITANFLIX `AI RECS`".
+   - Links: Home, My Watchlist, Watch History, Friends & Social, Admin Panel (dynamically revealed if role == 'admin').
+   - Live Search Input with debounced (250ms) dropdown preview results.
+   - User profile badge with dropdown menu.
+2. Spotlight Hero Banner (`#heroBanner`):
+   - Full-bleed cinematic backdrop with dual linear gradient vignettes (horizontal right fade and vertical bottom fade).
+   - Dynamic spotlight badge: "★ TOP SPOTLIGHT FILM".
+   - Movie title, match percentage pill, release year, duration, synopsis.
+   - Action buttons: "▶ Play Now", "ℹ More Info", "+ My List".
+3. Horizontal Carousels (`.carousel-section`):
+   - Hardware-accelerated overflow-x track with left/right smooth scroll navigation arrows.
+   - Hover card transform: Scales card to 1.06x with drop shadow `0 10px 25px rgba(0,0,0,0.85)`.
+   - Card overlay reveal: Displays quick actions ("▶", "+", "👍", "👎"), match score, year, and genre chips.
+   - Embedded progress bar on "Continue Watching" items.
+4. Movie Details Modal (`#detailsModal`):
+   - Hero backdrop banner inside modal header.
+   - Two-column metadata layout: Synopsis, Director, Cast, Genres.
+   - Dynamic Attribution Banner: "Recommended for your taste profile...".
+   - "More Like This" embedded horizontal carousel showing top 6 cosine-similar titles.
+5. Interactive Video Player Simulator (`#playerModal`):
+   - Dark cinematic 16:9 viewport with streaming simulation canvas.
+   - Custom scrubber range input, current time display, play/pause controls.
+   - Syncs real-time watch percentage to database upon closing.
+6. Genre Onboarding Modal (`#onboardingModal`):
+   - 20 interactive genre tiles with active red glow states.
+   - Real-time counter display (`X of 3 selected`).
+   - Disables submit button until selection requirement is satisfied.
+7. Authentication Modal (`#authModal`):
+   - Tabbed card (Sign In vs Register).
+   - Quick-demo credential hints for evaluators.
+
+
+====================================================================================================
+10. USER INTERACTION TRACKING & ENGAGEMENT TELEMETRY
+====================================================================================================
+Location: `static/js/tracker.js` & `database.py` (`user_interactions` table)
+
+Telemetry Pipeline:
+1. Client Event Trigger: User interacts with a card, modal, or video player.
+2. Anti-Spam Debouncing: Uses local memory sets to avoid recording duplicate rapid impressions.
+3. Asynchronous Dispatch: Dispatches non-blocking `fetch('/api/interactions')`.
+4. Database Ingestion: Stored with timestamp, user ID, movie ID, interaction type, duration, and recommendation source.
+5. Recommendation Feedback Loop:
+   - When user clicks "👍 Like": Immediately added to positive profile vectors.
+   - When user clicks "👎 Dislike": Immediately excluded from future recommendations.
+   - When user saves to "+ Watchlist": Boosts recommendation score by +0.25.
+   - When user watches >= 50%: Signals engagement, surfaces film to connected friends in social carousel.
+
+
+====================================================================================================
+11. VIDEO PLAYBACK SIMULATOR & "CONTINUE WATCHING" LIFECYCLE
+====================================================================================================
+Location: `static/js/player.js`
+
+Lifecycle Execution Trace:
+1. User clicks "▶ Play" on any movie card or hero banner.
+2. `player.open(movie, startProgress)` launches.
+3. Converts movie duration into seconds; initializes scrubber position.
+4. Playback loop runs every 500ms, advancing virtual playtime.
+5. Milestone Detection: When progress advances past 25%, 50%, 75%, or 90%, it triggers `api.updateWatchProgress(movie.id, pct)`.
+6. Database Update:
+   - Upserts record in `watch_history`.
+   - If `pct >= 90%`, sets `completed = 1`.
+   - If `5% < pct < 90%`, movie appears dynamically in "Continue Watching for [User]" carousel on homepage with an accurate red progress indicator bar.
+7. User clicks "Finish & Save Progress":
+   - Closes modal, persists exact scrubbed position.
+   - Silently refreshes homepage carousels to reflect updated progress.
+
+
+====================================================================================================
+12. USER ONBOARDING & PREFERENCE CAPTURE SYSTEM
+====================================================================================================
+Location: `static/js/onboarding.js`
+
+Workflow:
+1. Trigger: Automatically triggered upon new user registration, or manually accessible via "🎨 My Genre Preferences" in profile dropdown.
+2. 20 Predefined Categories: Action, Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Fantasy, History, Horror, Music, Musical, Mystery, Romance, Sci-Fi, Science Fiction, Thriller, War, Western.
+3. Constraint: Enforces `selectedGenres.size >= 3`.
+4. Database Persistence: Clears old entries in `user_preferences` for user and inserts new records.
+5. Immediate Recalculation: Calls `engine.recommend_for_user()`, causing "Top Picks for You" to immediately re-order and reflect the newly chosen genres.
+
+
+====================================================================================================
+13. SOCIAL GRAPH, CONTACT PICKER API & PEER RECOMMENDATIONS
+====================================================================================================
+Location: `static/js/social.js` & `server.py` (`/api/recommendations/social`)
+
+Capabilities:
+1. Friend Discovery & Search:
+   - Search box queries `users` table via `/api/friends/search?q=...`.
+   - 1-click connect establishes mutual bidirectional friendship records in `friends` table.
+2. Web Contacts API Integration:
+   - Evaluates: `'contacts' in navigator && 'ContactsManager' in window`.
+   - If supported (e.g. Chrome on Android): Prompts user for device contacts via `navigator.contacts.select(['name', 'email'])`.
+   - If unsupported (e.g. Desktop browsers): Renders graceful contextual notification advising user to use the instant username search.
+3. Social Recommendation Generation:
+   - Queries `watch_history` of connected friends who have `share_activity_with_friends = 1`.
+   - Filters for movies where friends watched >= 50% and current user has not watched.
+   - Surfaces movies in dedicated homepage carousel: "Popular Among Your Friends" with badges like *"Watched recently by sarah_friend"*.
+
+
+====================================================================================================
+14. ADMINISTRATIVE PORTAL & CATALOG MANAGEMENT SYSTEM
+====================================================================================================
+Location: `static/js/admin.js` & `server.py` (`@admin_required`)
+
+Features:
+1. Role-Based Access Control: Restricted to users with `role = 'admin'`. Non-admins receive HTTP 403 Forbidden.
+2. Real-Time Analytics Dashboard:
+   - Live KPI cards: Total Movies (1,200+), Registered Users (200+), Historical Ratings (20,320+), Interaction Signals Logged.
+3. Movie Publishing Interface:
+   - Add Movie Form validating title, release year, duration, initial rating, director, cast, comma-separated genres, synopsis overview, poster URL, and backdrop URL.
+   - On submission: Inserts record into `movies`, maps genres into `movie_genres`, and immediately re-fits `engine.content_model.fit()` so the new title is immediately searchable and eligible for recommendations.
+4. Movie Catalog Table:
+   - Live search filter by title.
+   - Delete action with cascading foreign key cleanup.
+
+
+====================================================================================================
+15. TEST SUITE & VERIFICATION HARNESS (18-POINT VERIFICATION)
+====================================================================================================
+Location: `test_platform.py`
+Execution: `python test_platform.py`
+Result: 18/18 TESTS PASSED (100.0%)
+
+Verification Checkpoints:
+1. Test 01: Homepage returns HTTP 200 and renders TITANFLIX brand assets.
+2. Test 02: Featured hero movie endpoint returns valid movie with title and backdrop URL.
+3. Test 03: Authentication endpoint logs in `demo_user` and issues valid session token.
+4. Test 04: Profile endpoint (`/api/auth/me`) correctly identifies authenticated user.
+5. Test 05: Onboarding endpoint validates and persists >= 3 selected genres.
+6. Test 06: Discovery endpoint generates Recommended, Trending, Continue Watching, and Genre rows.
+7. Test 07: Interaction tracking logs click telemetry into `user_interactions` table.
+8. Test 08: Watch progress endpoint updates playback to 55% in `watch_history`.
+9. Test 09: Viewing history endpoint retrieves active in-progress item.
+10. Test 10: Watchlist toggle endpoint adds movie and updates state.
+11. Test 11: Watchlist retrieval endpoint returns saved items.
+12. Test 12: Search endpoint returns matching titles for keyword queries (e.g. 'Dark').
+13. Test 13: Friends endpoint retrieves connected peer (`sarah_friend`).
+14. Test 14: Authentication endpoint verifies `admin` credentials.
+15. Test 15: Admin analytics endpoint returns KPI aggregates.
+16. Test 16: Admin movie creation endpoint creates new title with genre junction mappings.
+17. Test 17: Admin movie deletion endpoint deletes title cleanly.
+18. Test 18: Security guard blocks regular user from accessing administrative routes (HTTP 403).
+
+
+====================================================================================================
+16. DEPLOYMENT & RUNTIME INFRASTRUCTURE (LOCAL .BAT & FIREBASE HOSTING)
+====================================================================================================
+
+16.1 One-Click Desktop Launchers:
+- Root Launcher: `run_movie_platform.bat` (Directly in workspace root)
+- Subfolder Launcher: `Movie_Recommendation_Project_First_Review (2)\Movie_Recommendation_Project\run_project.bat`
+- Logic:
+  1. Validates Python environment.
+  2. Verifies presence of `movies.db`. If absent, automatically invokes `datasets/download_and_import.py`.
+  3. Launches default web browser directly to `http://127.0.0.1:5000`.
+  4. Starts Flask server via `python server.py`.
+
+16.2 Cloud Deployment (Firebase Hosting):
+- Hosting Configuration: `firebase.json`
+- Project Mapping: `.firebaserc` (`cinestream-rec-2026`)
+- Public Hosting CDN URL: `https://cinestream-rec-2026.web.app`
+- Cloud Fallback Architecture:
+  * When accessed via Firebase Hosting without an active local Python process, `static/js/api.js` automatically activates a built-in Cloud Fallback mode.
+  * Ensures that evaluators viewing the online link experience smooth hero banners, carousels, modals, video simulation, and watchlist operations without connection dropouts.
+
+
+====================================================================================================
+17. PROMPT DIRECTIVE FOR AI CONSUMPTION (HOW TO GENERATE THE PBD)
+====================================================================================================
+[INSTRUCTION FOR CHATGPT / GEMINI / CLAUDE]:
+You are acting as an expert Software Architect and Technical Writer for an Engineering College Project Review.
+You have been provided with the complete technical specification of Project TitanFlix in this document.
+Use the exhaustive data, formulas, schema DDLs, and gap analysis detailed above to produce the official:
+PROJECT BACKGROUND DOCUMENT (PBD) / PROJECT BLUEPRINT DOSSIER.
+
+Ensure the generated PBD includes:
+1. Project Overview & Problem Statement (Transforming a rudimentary 15-movie demo into a commercial-grade streaming platform).
+2. Existing System vs. Proposed System Comparative Table.
+3. System Requirements Specification (Hardware, Software, Dataset specifications).
+4. System Architecture Diagram Description & Data Flow Diagrams (DFD Level 0, 1, and 2).
+5. Detailed Database Entity-Relationship (ER) Documentation & Schema Dictionaries for all 12 tables.
+6. Machine Learning Mathematical Formulation (TF-IDF equation, Cosine Similarity, Pearson Correlation User-User Collaborative Filtering, Multi-Objective Hybrid Formula, and Cold-Start resolution).
+7. Module Decomposition:
+   - Module 1: Data Ingestion & TMDB CDN Enrichment Engine
+   - Module 2: Hybrid Recommendation & Explanation Core
+   - Module 3: Authentication, Session Security & Onboarding
+   - Module 4: Netflix-Style Responsive User Interface
+   - Module 5: Engagement Telemetry & Interaction Tracking
+   - Module 6: Playback Simulator & Continue-Watching State Engine
+   - Module 7: Social Graph & Peer Recommendation Feeds
+   - Module 8: Administrative Governance & Analytics Portal
+8. API Endpoint Documentation (Request/Response schemas for all 18 endpoints).
+9. Test Strategy & Verification Results (18/18 Unit & Integration Test Cases Passed).
+10. Deployment Strategy (Local Batch Script Execution & Firebase Cloud Hosting).
+11. Future Scope & Enhancements (Matrix Factorization with SVD/ALS, Deep Neural Collaborative Filtering, Vector Database ANN search with FAISS/ChromaDB).
+====================================================================================================
+END OF PROJECT SPECIFICATION DOSSIER
+====================================================================================================
