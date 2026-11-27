@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineStream • Intelligent Movie Discovery & Recommendation Platform</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍿</text></svg>">
+</head>
+<body>
+
+  <!-- ========================================================
+       TOP NAVIGATION BAR
+       ======================================================== -->
+  <header class="navbar" id="mainNavbar">
+    <div class="nav-left">
+      <a href="#" class="brand-logo" onclick="app.switchView('home')">
+        NETFLIX <span>AI RECS</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#" id="nav-home" class="active" onclick="app.switchView('home')">Home</a></li>
+        <li><a href="#" id="nav-watchlist" onclick="app.switchView('watchlist')">My Watchlist</a></li>
+        <li><a href="#" id="nav-history" onclick="app.switchView('history')">Watch History</a></li>
+        <li><a href="#" id="nav-friends" onclick="app.switchView('friends')">Friends & Social</a></li>
+        <li><a href="#" id="adminNavLink" style="display:none; color: var(--accent-gold);" onclick="app.switchView('admin')">⚙ Admin Panel</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-right">
+      <!-- Search -->
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <span style="font-size: 13px; color: #888;">🔍</span>
+          <input type="text" id="navSearchInput" placeholder="Titles, genres, directors..." autocomplete="off">
+        </div>
+        <div class="search-suggestions" id="searchSuggestions"></div>
+      </div>
+
+      <!-- User Profile -->
+      <div class="profile-container" style="position: relative;">
+        <button class="profile-btn" id="profileBtn" onclick="app.toggleProfileDropdown()">
+          <div class="avatar-badge" id="avatarBadge">?</div>
+          <span style="font-size: 11px;">▼</span>
+        </button>
+
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="profile-header">
+            <div class="username" id="profileDropdownUsername">Guest</div>
+            <div class="role-tag" id="profileDropdownRole">Visitor</div>
+          </div>
+          <button onclick="onboarding.show(); app.toggleProfileDropdown();">🎨 My Genre Preferences</button>
+          <button onclick="app.switchView('watchlist')">🔖 My Watchlist</button>
+          <button onclick="app.switchView('history')">⏱ Viewing History</button>
+          <button id="signinOrOutBtn" onclick="if(auth.currentUser){auth.handleLogout();}else{auth.showAuthModal('login');} app.toggleProfileDropdown();">
+            Sign In / Register
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       PAGE VIEW 1: HOMEPAGE (Hero Banner + Carousels)
+       ======================================================== -->
+  <div class="page-view active" id="view-home" style="padding-top: 0;">
+    <!-- Cinematic Hero Banner -->
+    <section class="hero-banner" id="heroBanner">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge">★ TOP SPOTLIGHT FILM</div>
+        <h1 class="hero-title" id="heroTitle">Featured Blockbuster</h1>
+        <div class="hero-meta">
+          <span class="match-score" id="heroMatch">99% Match</span>
+          <span class="rating-badge" id="heroRating">★ 4.8</span>
+          <span id="heroYear">2024</span>
+          <span class="hero-genres" id="heroGenres">Sci-Fi • Thriller</span>
+        </div>
+        <p class="hero-overview" id="heroOverview">
+          A deeply thrilling cinematic journey through mind-bending phenomena, emotional trials, and human resilience.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="heroPlayBtn">▶ Play Now</button>
+          <button class="btn btn-secondary" id="heroInfoBtn">ℹ More Info</button>
+          <button class="btn btn-secondary" id="heroListBtn">+ My List</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Movie Carousels -->
+    <main class="main-container" id="carouselsContainer">
+      <!-- Dynamic Rows Rendered Here by app.js -->
+    </main>
+  </div>
+
+  <!-- ========================================================
+       PAGE VIEW 2: WATCHLIST
+       ======================================================== -->
+  <div class="page-view" id="view-watchlist" style="padding: 100px 4% 60px 4%;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px;">
+      <h2 style="font-size: 28px; font-weight: 800;">My Watchlist</h2>
+      <span style="color: var(--text-secondary); font-size: 14px;">Movies you've saved to watch next</span>
+    </div>
+    <div id="watchlistGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px;"></div>
+  </div>
+
+  <!-- ========================================================
+       PAGE VIEW 3: WATCH HISTORY
+       ======================================================== -->
+  <div class="page-view" id="view-history" style="padding: 100px 4% 60px 4%; max-width: 900px; margin: 0 auto;">
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-size: 28px; font-weight: 800;">Viewing History & Continue Watching</h2>
+      <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+        Track your playback progress, resume in-progress movies, and see your completed watch history.
+      </p>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ========================================================
+       PAGE VIEW 4: FRIENDS & SOCIAL RECOMMENDATIONS
+       ======================================================== -->
+  <div class="page-view" id="view-friends" style="padding: 100px 4% 60px 4%; max-width: 800px; margin: 0 auto;">
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-size: 28px; font-weight: 800;">Social Discovery & Friends</h2>
+      <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+        Connect with friends to discover what they are enjoying and share movie recommendations.
+      </p>
+    </div>
+
+    <!-- Contact Picker notice container -->
+    <div id="contactsApiNotice"></div>
+
+    <!-- Search users -->
+    <div style="background: var(--bg-card); padding: 20px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border-subtle);">
+      <h4 style="font-size: 15px; margin-bottom: 10px;">Find Friends by Username or Email</h4>
+      <input type="text" id="friendSearchInput" class="form-input" placeholder="Type username (e.g. sarah_friend, demo_user)..." oninput="social.handleSearch(this.value)">
+      <div id="friendSearchResults" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- Connected Friends List -->
+    <h3 style="font-size: 18px; margin-bottom: 14px;">Your Friends</h3>
+    <div id="friendsListContainer"></div>
+  </div>
+
+  <!-- ========================================================
+       PAGE VIEW 5: ADMIN MANAGEMENT PANEL
+       ======================================================== -->
+  <div class="page-view" id="view-admin" style="padding: 100px 4% 60px 4%;">
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-size: 28px; font-weight: 800; color: var(--accent-gold);">⚙ Administrator Portal</h2>
+      <p style="color: var(--text-secondary); font-size: 14px;">
+        Manage catalog movies, add new titles with genre relationships, and monitor platform metrics.
+      </p>
+    </div>
+
+    <!-- Analytics Cards -->
+    <div class="admin-stats-grid">
+      <div class="stat-card">
+        <div class="label">Total Movies in Catalog</div>
+        <div class="value" id="adminStatMovies">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Registered Users</div>
+        <div class="value" id="adminStatUsers">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Historical Ratings</div>
+        <div class="value" id="adminStatRatings">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Interaction Signals Logged</div>
+        <div class="value" id="adminStatInteractions">-</div>
+      </div>
+    </div>
+
+    <!-- Add Movie Section -->
+    <div style="background: var(--bg-card); padding: 24px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 30px;">
+      <h3 style="font-size: 18px; margin-bottom: 16px;">+ Add New Movie to Catalog</h3>
+      <form id="adminAddMovieForm" onsubmit="admin.handleAddMovie(event)">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label>Movie Title *</label>
+            <input type="text" id="adminMovieTitle" class="form-input" required placeholder="e.g. Inception 2">
+          </div>
+          <div class="form-group">
+            <label>Release Year</label>
+            <input type="number" id="adminMovieYear" class="form-input" value="2025">
+          </div>
+          <div class="form-group">
+            <label>Duration (minutes)</label>
+            <input type="number" id="adminMovieDuration" class="form-input" value="130">
+          </div>
+          <div class="form-group">
+            <label>Initial Rating (0.5 - 5.0)</label>
+            <input type="number" id="adminMovieRating" class="form-input" step="0.1" min="0.5" max="5.0" value="4.5">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label>Director</label>
+            <input type="text" id="adminMovieDirector" class="form-input" placeholder="e.g. Christopher Nolan">
+          </div>
+          <div class="form-group">
+            <label>Cast Members</label>
+            <input type="text" id="adminMovieCast" class="form-input" placeholder="e.g. Leonardo DiCaprio, Cillian Murphy">
+          </div>
+          <div class="form-group">
+            <label>Genres (comma-separated)</label>
+            <input type="text" id="adminMovieGenres" class="form-input" placeholder="e.g. Sci-Fi, Thriller, Action">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Synopsis / Overview</label>
+          <textarea id="adminMovieOverview" class="form-input" rows="3" placeholder="Enter movie description..."></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label>Poster Image URL</label>
+            <input type="url" id="adminMoviePoster" class="form-input" placeholder="https://image.tmdb.org/...">
+          </div>
+          <div class="form-group">
+            <label>Backdrop Banner URL</label>
+            <input type="url" id="adminMovieBackdrop" class="form-input" placeholder="https://image.tmdb.org/...">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-red" style="padding: 10px 24px;">Publish Movie</button>
+      </form>
+    </div>
+
+    <!-- Manage Movies Table -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <h3 style="font-size: 18px;">Catalog Movies</h3>
+      <input type="text" placeholder="Filter by title..." class="form-input" style="width: 240px; padding: 6px 12px;" oninput="admin.loadMoviesTable(1, this.value)">
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Year</th>
+          <th>Genres</th>
+          <th>Rating</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adminMoviesTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ========================================================
+       MODAL 1: MOVIE DETAILS MODAL
+       ======================================================== -->
+  <div class="modal-backdrop" id="detailsModal" onclick="if(event.target===this) app.closeDetails()">
+    <div class="details-modal">
+      <button class="modal-close-btn" onclick="app.closeDetails()">✕</button>
+      <div class="details-hero" id="modalHero">
+        <div class="details-hero-overlay">
+          <h2 style="font-size: 36px; font-weight: 900; margin-bottom: 14px;" id="modalTitle">-</h2>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" id="modalPlayBtn">▶ Play</button>
+            <button class="btn btn-secondary" id="modalListBtn">+ Add to Watchlist</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="details-body">
+        <div class="explanation-banner" id="modalExplanationBanner"></div>
+
+        <div class="details-columns">
+          <div>
+            <div style="display: flex; gap: 14px; margin-bottom: 16px; font-size: 14px;">
+              <span class="match-score" id="modalMatch">98% Match</span>
+              <span id="modalYear">2024</span>
+              <span id="modalDuration">120m</span>
+              <span class="rating-badge">HD</span>
+            </div>
+            <p class="details-overview" id="modalOverview"></p>
+          </div>
+
+          <div class="details-sidebar">
+            <p>Director: <span id="modalDirector">-</span></p>
+            <p>Cast: <span id="modalCast">-</span></p>
+            <p>Genres: <span id="modalGenres">-</span></p>
+          </div>
+        </div>
+
+        <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 14px;">More Like This</h4>
+        <div class="carousel-track" id="modalSimilarTrack" style="padding-bottom: 10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 2: VIDEO PLAYER SIMULATION MODAL
+       ======================================================== -->
+  <div class="modal-backdrop" id="playerModal" onclick="if(event.target===this) player.close()">
+    <div class="player-modal">
+      <button class="modal-close-btn" onclick="player.close()">✕</button>
+      <div class="simulated-video-screen">
+        <div style="font-size: 48px; margin-bottom: 14px;">🎬</div>
+        <h2 style="font-size: 26px; font-weight: 800;" id="playerMovieTitle">Movie Playback</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; margin-top: 6px;">
+          Streaming in 4K HDR • Tracking engagement and watch progress in real-time
+        </p>
+      </div>
+
+      <div class="player-controls">
+        <input type="range" class="player-scrubber" id="playerScrubber" min="0" max="7200" value="0" oninput="player.seekTo(this.value)">
+        <div class="player-btn-row">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <button class="btn btn-primary" id="playerPlayPauseBtn" style="padding: 6px 16px; font-size: 13px;" onclick="player.togglePlayPause()">⏸ Pause</button>
+            <span style="font-size: 12px; color: #bbb;" id="playerCurrentTime">0:00</span>
+          </div>
+          <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 12px;" onclick="player.close()">Finish & Save Progress</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 3: ONBOARDING GENRE PICKER MODAL
+       ======================================================== -->
+  <div class="modal-backdrop" id="onboardingModal">
+    <div class="onboarding-card">
+      <h2 class="onboarding-title">What types of movies do you enjoy?</h2>
+      <p class="onboarding-subtitle">Select at least 3 genres to personalize your Netflix recommendations engine.</p>
+      
+      <div class="genres-grid" id="genresGridContainer"></div>
+
+      <div class="onboarding-footer">
+        <span id="onboardingCountDisplay" style="font-weight: 700; font-size: 14px;">0 of 3 selected</span>
+        <button class="btn btn-red" id="onboardingSubmitBtn" disabled onclick="onboarding.submit()">
+          Save & Explore Movies
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 4: AUTHENTICATION MODAL (Login / Register)
+       ======================================================== -->
+  <div class="modal-backdrop" id="authModal" onclick="if(event.target===this) auth.hideAuthModal()">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="auth.switchTab('login')">Sign In</button>
+        <button class="auth-tab" id="tabRegister" onclick="auth.switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="event.preventDefault(); auth.handleLogin(document.getElementById('loginUser').value, document.getElementById('loginPass').value)">
+        <div class="form-group">
+          <label>Username or Email</label>
+          <input type="text" id="loginUser" class="form-input" required placeholder="demo_user">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPass" class="form-input" required placeholder="user123">
+        </div>
+        <button type="submit" class="btn btn-red" style="width: 100%; margin-top: 10px;">Sign In</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" style="display: none;" onsubmit="event.preventDefault(); auth.handleRegister(document.getElementById('regUser').value, document.getElementById('regEmail').value, document.getElementById('regPass').value)">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="regUser" class="form-input" required placeholder="Choose a username">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="regEmail" class="form-input" required placeholder="name@example.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPass" class="form-input" required placeholder="Minimum 6 characters">
+        </div>
+        <button type="submit" class="btn btn-red" style="width: 100%; margin-top: 10px;">Create Account</button>
+      </form>
+
+      <div class="auth-hint">
+        💡 <strong>Quick Demo Credentials for Skill Lab Review:</strong><br>
+        • Regular User: <code>demo_user</code> / <code>user123</code><br>
+        • Administrator: <code>admin</code> / <code>admin123</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/tracker.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/onboarding.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/social.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
